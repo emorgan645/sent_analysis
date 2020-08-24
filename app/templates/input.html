@@ -1,0 +1,22 @@
+{% extends "base.html" %} {% import 'bootstrap/wtf.html' as wtf %} {% block app_content %}
+
+<h1>Input keywords to search tweets</h1>
+<div class="row">
+
+    <form action="{{ url_for('results') }}" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.keywords.label }}<br> {{ form.keywords(size=32) }}<br> {% for error in form.keywords.errors %}
+            <span style="color: red;">[{{ error }}]</span> {% endfor %}
+        </p>
+        <p>
+            {{ form.limit.label }}<br> {{ form.limit(cols=50, rows=4) }}<br> {% for error in form.limit.errors %}
+            <span style="color: red;">[{{ error }}]</span> {% endfor %}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+
+
+</div>
+
+{% endblock %}
