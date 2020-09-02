@@ -1,0 +1,37 @@
+{% extends "base.html" %} {% import 'bootstrap/wtf.html' as wtf %} {% block app_content %}
+<!DOCTYPE html>
+<html>
+
+<h1>Processing tweets</h1>
+<div class="container">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Username</th>
+                <th scope="col">Sentiment Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <th scope="row">{{loop.index}}</th>
+                <td><a href="http://twitter.com/{{row[0]}}">@{{ row[0] }}</a></td>
+                {% if row[1] == None %}
+                <td>Users tweets are protected</td>
+                {% else %}
+                <td>{{row[1]}}%</td>
+                {% endif %}
+                <td><a href="https://twitter.com/share?url=@{{row[0]}}" class="btn-floating btn-tw" type="button" role="button"><i class="fab fa-twitter"></i>Tweet</a></td>
+
+            </tr>
+            {% endfor %}
+
+        </tbody>
+    </table>
+    <a href="{{ url_for('input') }}">Go to search</a>
+</div>
+
+</html>
+
+{% endblock %}

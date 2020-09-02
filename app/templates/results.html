@@ -1,13 +1,38 @@
 {% extends "base.html" %} {% import 'bootstrap/wtf.html' as wtf %} {% block app_content %}
+<!DOCTYPE html>
+<html>
 
-<h1>Processing tweets</h1>
-<div class="row">
+<h1>Results</h1>
+<div class="container">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Keyword</th>
+                <th scope="col">Username</th>
+                <th scope="col">Created at</th>
+                <th scope="col">Tweet</th>
+                <th scope="col">Classification</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <th scope="row">{{loop.index}}</th>
+                <td>{{ row[1] }}</td>
+                <td><a href="http://twitter.com/{{row[2]}}">@{{ row[2] }}</a></td>
+                <td>{{row[3]}}</td>
+                <td>{{row[4]}}</td>
+                <td>{{row[6]}}</td>
+            </tr>
+            {% endfor %}
 
-    <div class="col-md-12 mb-3 row">
 
-
-    </div>
-
+        </tbody>
+    </table>
+    <a href="{{ url_for('scores') }}">Go to user scores</a>
 </div>
+
+</html>
 
 {% endblock %}
