@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, IntegerField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length, NumberRange
 
-from app.models import User
+from app.models import User, Post, Search
 
 
 class LoginForm(FlaskForm):
@@ -53,9 +53,13 @@ class PostForm(FlaskForm):
 
 
 class InputForm(FlaskForm):
-    keywords = StringField('Keyword', validators=[DataRequired()])
-    limit = IntegerField('limit', validators=[NumberRange(min=10, max=1000, message='Invalid length')])
+    keyword = StringField('keyword', validators=[DataRequired()])
+    limit = IntegerField('limit', validators=[NumberRange(min=10, max=500, message='Invalid length! Must be between 1 and 500')])
     submit = SubmitField('See Results! >>')
+
+    def validate_input(self, keywords):
+        if keywords is None:
+                raise ValidationError('Please input keywords.')
 
 
 class EmptyForm(FlaskForm):

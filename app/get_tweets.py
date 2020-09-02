@@ -2,23 +2,29 @@ import json
 import re
 import string
 import sys
-from datetime import datetime
+import datetime
+import time
 from string import punctuation
+from collections import Counter
+import sys
 
 import joblib
-import mysql.connector
+
+import sqlite3
+
 import pandas as pd
 import tweepy
 from dateutil import parser
 from flask import flash
-from mysql.connector import Error
+
 from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.tag import pos_tag
 from nltk.tokenize import word_tokenize
 
-from app.forms import InputForm
+from textblob import TextBlob
 
-pd.set_option('display.max_colwidth', 1000)
+from app.forms import InputForm
+from app import db
 
 model_NB = joblib.load("twttr_sntmnt.pkl")
 
@@ -36,38 +42,156 @@ auth = tweepy.OAuthHandler(api_key, api_secret_key)
 auth.set_access_token(access_token, access_token_secret)
 api = tweepy.API(auth, wait_on_rate_limit=True)
 
+database = r"C:\Users\emorg\webapp\app.db"
 
-# def get_related_tweets(text_query):
-#     # list to store tweets
-#     tweets_list = []
-#     # no of tweets
-#     count = 50
-#     try:
-#         # Pulling individual tweets from query
-#         for tweet in api.search(q=text_query, count=count):
-#             print(tweet.text)
-#             # Adding to list that contains all tweets
-#             tweets_list.append({'created_at': tweet.created_at,
-#                                 'tweet_id': tweet.id,
-#                                 'tweet_text': tweet.text})
-#         return pd.DataFrame.from_dict(tweets_list)
 
-#     except BaseException as e:
-#         print('failed on_status,', str(e))
-#         time.sleep(3)
+# formatting helper
+def sentiment_str(x):
+    if x == 'negative':
+        classification = 'negative'
+    elif x == 'positive':
+        classification = 'positive'
+    else:
+        classification = 'neutral'
+    return classification
 
-def streaming():
-    # create instance of Streamlistener
-    # tweet mode 'extended' allows for full text tweets to be streamed
-    listener = Streamlistener(api=api)
 
-    stream = tweepy.Stream(auth, listener=listener, tweet_mode='extended')
+def get_tweets_classification(user_id, text_query, limit):
+    try:
 
-    track = InputForm.keywords
+        # list to store tweets
+        tweets_list = []
+        # no of tweets
+        count = limit
 
-    # choose what we want to filter by
-    stream.filter(track=track, languages=['en'])
+        # Pulling individual tweets from query based on user input
+        results = api.search(q=text_query, exclude_replies=True, count=count, tweet_mode='extended', lang=['en'],
+                             include_rts=False)
+        for tweet in results:
 
+            tweet_msg = tweet.full_text
+
+            location = tweet.user.location
+            username = tweet.user.screen_name
+
+            # will work out how old the acc is in days
+            item = api.get_user(username)
+
+            account_created_date = item.created_at
+
+            delta = datetime.datetime.utcnow() - account_created_date
+            account_age_days = delta.days
+
+            if account_age_days > 60:
+
+                if tweet_msg is not None:
+                    # custom_tokens = remove_noise(word_tokenize(tweet_msg))
+                    # print(custom_tokens)
+
+                    # Adding to list that contains all tweets
+                    tweets_list.append(
+                        {'tweetid': tweet.id, 'username': username, 'created_at': (str(tweet.created_at)),
+                         'tweet': tweet_msg, 'location': location, 'place': tweet.place})
+
+                    tweet_msg = [tweet_msg]
+
+                    classification = model_NB.predict(tweet_msg)
+                    classification = sentiment_str(classification[0])
+
+                    tweets_list.append({'classification': classification})
+
+                    tweet_msg = "".join(tweet_msg)
+
+                    # insert data just collected into SQLite database
+                    connect(user_id, tweet.id, username, (str(tweet.created_at)), str(tweet_msg), tweet.place,
+                            classification)
+        return pd.DataFrame.from_dict(tweets_list)
+
+    except BaseException as e:
+        print('failed on_status,', str(e))
+        time.sleep(3)
+
+
+def get_user_classification(user_id, text_query):
+
+    users = connect_sql_users()
+
+    account_list = []
+    tweet_count = 0
+
+    for user in users[0:]:
+        try:
+            if users is not None:
+
+                search = api.user_timeline(screen_name=user, count=20, tweet_mode='extended', include_rts=False)
+
+                num = 0
+                tb_total = 0
+
+                for status in search:
+
+                    num += 1
+                    tb_score = 0
+                    analysis = TextBlob(status.full_text)
+                    
+                    if analysis.sentiment.polarity == 0:  # neutral
+                        tb_score = 2
+                    elif 0 < analysis.sentiment.polarity <= 0.2:  # weak positive
+                        tb_score = 3
+                    elif 0.2 < analysis.sentiment.polarity <= 0.4:  # positive
+                        tb_score = 4
+                    elif 0.4 < analysis.sentiment.polarity <= 1:  # strong positive
+                        tb_score = 5
+                    elif -0.2 < analysis.sentiment.polarity <= 0:  # weak negative
+                        tb_score = 1
+                    elif -0.7 < analysis.sentiment.polarity <= -0.2:  # negative
+                        tb_score = 0
+                    elif -1 < analysis.sentiment.polarity <= -0.7:  # strong negative
+                        tb_score = -1
+
+                    tb_total += tb_score
+                    total = num * 5
+                    avg = tb_total / total * 100
+                    avg = round(avg, 2)
+
+                    account_list.append(user)
+                
+            else:
+                sys.exit(0)
+        except tweepy.TweepError as ex:
+            if ex.reason == "Not authorized.":
+                continue
+
+        if len(account_list) > 0:
+
+            
+            item = api.get_user(user)
+            name = item.name
+            description = item.description
+            status_count = str(item.statuses_count)
+            friend_count = str(item.friends_count)
+            followers_count = str(item.followers_count)
+
+            tweets = item.statuses_count
+            account_created_date = item.created_at
+            delta = datetime.datetime.utcnow() - account_created_date
+            account_age_days = delta.days
+            acc_age = str(account_age_days)
+            if account_age_days > 0:
+                avg_tweets = (float(tweets) / float(account_age_days))
+                avg_tweets = round(avg_tweets, 2)
+                end_date = datetime.datetime.utcnow() - datetime.timedelta(days=30)
+                for status in tweepy.Cursor(api.user_timeline, id=user).items():
+                    tweet_count += 1
+                    if status.created_at < end_date:
+                        break
+
+            connect_sql_update(text_query, user_id, user, avg, name, description, status_count, friend_count, followers_count, avg_tweets, acc_age)
+
+        else:
+            print("no info")
+            break
+    return users
 
 def remove_noise(tweet_tokens, stop_words=()):
     """
@@ -125,158 +249,71 @@ def word_count(sentence):
     return len(sentence.split())
 
 
-# formatting helper
-def sentiment_str(x):
-    if x == 'negative':
-        classification = 'negative'
-    elif x == 'positive':
-        classification = 'positive'
-    else:
-        classification = 'neutral'
-    return classification
-
-
-def connect(tweetid, username, created_at, tweet, location, place, classification):
-    con = mysql.connector.connect(host="localhost", user="root",
-                                  passwd="", database="emorgan", use_unicode=True, charset='utf8')
+def connect_sql_users():
+    con = sqlite3.connect(database)
     cursor = con.cursor()
+
+    username = []
+
     try:
-        if con.is_connected():
 
-            query = "INSERT INTO tweetdb (tweetid, username, created_at, tweet, location, place, classification) " \
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s) "
-            cursor.execute(query, (tweetid, username, created_at, tweet, location, place, classification))
-            if classification == 'negative':
-                query_neg = "INSERT INTO neg_tweet (tweetid, username, created_at, tweet, place, location) " \
-                            "VALUES (%s, %s, %s, %s, %s, %s)"
-                cursor.execute(query_neg, (tweetid, username, created_at, tweet, location, place))
-            con.commit()
+        search_query = """SELECT search_id from search ORDER BY `search_id` DESC LIMIT 1"""
+        cursor.execute(search_query)
+        search_id = cursor.fetchall()
 
-            # sql_select_query = "select * from tweetdb"
-            # cursor.execute(sql_select_query)
-            # rows = cursor.fetchall()
-            #
-            # csvfile = open('tweet_data/tweetdb.csv', 'w', newline='', encoding='utf-8')
-            # csvwriter = csv.writer(csvfile)
-            #
-            # csvwriter.writerows(rows)
-
-    except Error as e:
+        query = "SELECT username FROM user_results WHERE search_id = ?"
+        cursor.execute(query, (int(search_id[0][0]),))
+        usersall = cursor.fetchall()
+        for row in usersall:
+            username.append(row[0])
+        return username
+    except sqlite3.Error as e:
         print(e)
+
+    cursor.close()
+    con.close()
+
+
+def connect(user_id, tweetid, username, created_at, tweet, place, classification):
+    con = sqlite3.connect(database)
+    cursor = con.cursor()
+
+    try:
+
+        search_query = """SELECT search_id from search ORDER BY `search_id` DESC LIMIT 1"""
+        cursor.execute(search_query)
+        search_id = cursor.fetchall()
+
+        query = "INSERT INTO user_results(user_id, search_id, tweetid, username, created_at, tweet, place, " \
+                "classification) VALUES(?, ?, ?, ?, ?, ?, ?, ?) "
+
+        """when using fetchall above, search_id is returned as a tuple, this is corrected below where it is cast as 
+        an int """
+        cursor.execute(query,
+                       (user_id, int(search_id[0][0]), tweetid, username, created_at, tweet, place, classification))
+        con.commit()
+
+    except sqlite3.Error as error:
+        print("Failed to insert data into sqlite table", error)
 
     cursor.close()
     con.close()
     return
 
 
-# Tweepy class to access Twitter API
-class Streamlistener(tweepy.StreamListener):
+def connect_sql_update(search_id, user_id, user, tb_avg, name, description, status_count, friend_count, followers_count, tweets, acc_age):
+    con = sqlite3.connect(database)
+    cursor = con.cursor()
 
-    def __init__(self, api=None):
-        super().__init__()
-        self.counter = 0
-        self.limit = 10
+    try:
 
-    def on_connect(self):
-        # Called initially to connect to the Streaming API
-        flash("You are now connected to the streaming API.")
 
-    def on_status(self, status):
-        try:
-            flash(status.extended_tweet['full_text'])
-        except Exception as e:
-            raise e
-        else:
-            flash(status.text)
-        return True
+        twit_query = """INSERT INTO twitter_details (search_id, name, desc, status_count, friend_count, follower_count, tweet_avg, acc_age, username, user_id, tb_score) VALUES (?,?,?,?,?,?,?,?,?,?,?)""" 
+        cursor.execute(twit_query, (search_id, name, description, status_count, friend_count, followers_count, tweets, acc_age, user, user_id, tb_avg))
 
-    def on_error(self, status_code):
-        # On error - if an error occurs, display the error / status code
-        flash('An Error has occurred: ' + repr(status_code))
-        if status_code == 420:
-            return False
-        return False
+        con.commit()
+    except sqlite3.Error as e:
+        print(e)
 
-    """
-    This method reads in tweet data as Json
-    and extracts the data needed.
-    """
-
-    def on_data(self, data):
-
-        try:
-
-            raw_data = json.loads(data)
-
-            username = raw_data['user']['screen_name']
-
-            item = api.get_user(username)
-
-            account_created_date = item.created_at
-
-            delta = datetime.utcnow() - account_created_date
-            account_age_days = delta.days
-
-            pos = 0
-            neg = 0
-            neut = 0
-
-            if account_age_days > 60:
-
-                if 'extended_tweet' in raw_data:
-                    tweet = raw_data['extended_tweet']['full_text']
-                    if not raw_data['retweeted'] and 'RT @' and '@' not in raw_data['extended_tweet']['full_text']:
-                        return tweet
-                    else:
-                        tweet = None
-                else:
-                    tweet = raw_data['text']
-                    if not raw_data['retweeted'] and 'RT @' and '@' not in raw_data['text']:
-                        return tweet
-                    else:
-                        tweet = None
-
-                tweetid = raw_data['id']
-                created_at = parser.parse(raw_data['created_at'])
-
-                location = raw_data['user']['location']
-
-                if raw_data['place'] is not None:
-                    place = raw_data['place']
-                else:
-                    place = None
-
-                if tweet is not None:
-                    custom_tweet = tweet
-
-                    custom_tokens = remove_noise(word_tokenize(custom_tweet))
-                    p = model_NB.predict(custom_tokens)
-                    classification = sentiment_str(p[0])
-
-                    # insert data just collected into MySQL database
-                    connect(tweetid, username, created_at, tweet, location, place, classification)
-                    collected = "Tweet collected at: {} ".format(str(created_at))
-                    acc_age = "Account age (in days): " + str(account_age_days)
-                    tweet_info = custom_tweet, collected, acc_age, classification
-                    print(tweet_info)
-
-                    if classification == 'positive':
-                        pos += 1
-                    elif classification == 'negative':
-                        neg += 1
-                    else:
-                        neut += 1
-
-                    self.counter += 1
-
-                    if self.counter < self.limit:
-                        return True
-                    else:
-                        predictions = 'Model predictions: Positives - {}, Negatives - {}, Neutrals - {}'.format(pos,
-                                                                                                                neg,
-                                                                                                                neut)
-                        sys.exit('Limit of ' + str(self.limit) + ' tweets reached.')
-                        return predictions
-
-        except Error as e:
-            print(e)
+    cursor.close()
+    con.close()

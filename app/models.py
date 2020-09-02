@@ -73,3 +73,23 @@ class Post(db.Model):
 
     def __repr__(self):
         return '<Post {}>'.format(self.body)
+
+
+class Search(db.Model):
+    search_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    keyword = db.Column(db.String(100))
+    limit = db.Column(db.Integer)
+
+
+class User_results(db.Model):
+    user_results_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    search_id = db.Column(db.Integer, db.ForeignKey('search.search_id'))
+    tweetid = db.Column(db.BigInteger)
+    username = db.Column(db.String(50))
+    created_at = db.Column(db.String(50))
+    tweet = db.Column(db.String(300))
+    place = db.Column(db.String(500))
+    classification = db.Column(db.String(50))
+    tb_score = db.Column(db.Integer)

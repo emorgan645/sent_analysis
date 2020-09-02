@@ -8,36 +8,23 @@ from werkzeug.urls import url_parse
 
 from app import app, db
 from app.forms import LoginForm, RegistrationForm, EditProfileForm, EmptyForm, PostForm, InputForm
-from app.get_tweets import Streamlistener
-from app.models import User, Post
+from app.get_tweets import get_tweets_classification, get_user_classification, api_key, api_secret_key, access_token_secret, access_token
+from app.models import User, Post, Search, User_results
 
-# load train data
-dataset = read_csv('app/dataset/combined_csv.csv',
-                   error_bad_lines=False)
+import sqlite3
 
-dataset = dataset[dataset['tweet'].notnull()]
+database = r"C:\Users\emorg\webapp\app.db"
 
-# Use pickle to load in the pre-trained model
 model_NB = joblib.load("twttr_sntmnt.pkl")
-sentence = dataset['tweet']
-# run predictions on twitter data
-tweet_preds = model_NB.predict(sentence)
 
+def requestResults(name, limit):
+    
+    user_id = current_user.id
+    tweets = get_tweets_classification(user_id, name, limit)
+    print(tweets)
+    data = str(tweets['classification'].value_counts()) + '\n\n'
 
-def request_results(name):
-    tweets = Streamlistener.on_data
-    return tweets
-
-
-# append predictions to dataframe
-df_tweet_preds = dataset.copy()
-df_tweet_preds['predictions'] = tweet_preds
-shape = df_tweet_preds.shape
-
-
-# freq_dist_pos = FreqDist(all_pos_words)
-# freq_dist_neg = FreqDist(all_neg_words)
-# freq_dist_irr = FreqDist(all_irr_words)
+    return data + str(tweets)
 
 @app.before_request
 def before_request():
@@ -47,6 +34,7 @@ def before_request():
 
 
 @app.route('/', methods=['GET', 'POST'])
+
 @app.route('/index', methods=['GET', 'POST'])
 @login_required
 def index():
@@ -98,7 +86,7 @@ def login():
         if not next_page or url_parse(next_page).netloc != '':
             next_page = url_for('index')
         return redirect(next_page)
-    return render_template('login.php', title='Sign In', form=form)
+    return render_template('login.html', title='Sign In', form=form)
 
 
 @app.route('/logout')
@@ -129,6 +117,7 @@ def user(username):
     page = request.args.get('page', 1, type=int)
     posts = user.posts.order_by(Post.timestamp.desc()).paginate(
         page, app.config['POSTS_PER_PAGE'], False)
+
     next_url = url_for('user', username=user.username, page=posts.next_num) \
         if posts.has_next else None
     prev_url = url_for('user', username=user.username, page=posts.prev_num) \
@@ -195,36 +184,144 @@ def unfollow(username):
         return redirect(url_for('index'))
 
 
-# @app.route('/input', methods=['POST', 'GET'])
-# @login_required
-# def input():
-#     form = InputForm()
-#     if form.validate_on_submit():
-#         user = form.keywords
-#     if request.method == 'POST':
-#         user = request.form['search']
-#     if user is None:
-#         flash('You must enter at least 1 keyword')
-#     else:
-#         return redirect(url_for('results', name=user)) 
-#     return render_template('input.html', user=user, title='Input', form=form)
-
-@app.route('/input', methods=['POST', 'GET'])
-@login_required
-def home():
-    form = InputForm()
-    return render_template('input.html', title='Input', form=form)
-
-
 @app.route('/input', methods=['POST', 'GET'])
 @login_required
 def input():
-    if request.method == 'POST':
-        user = request.form['search']
-        return redirect(url_for('results', name=user))
+    form = InputForm()
+    if form.validate_on_submit():
+        user_search = Search(user_id=current_user.id, keyword=form.keyword.data, limit=form.limit.data)
+        db.session.add(user_search)
+        db.session.commit()
+        keyword = form.keyword.data
+        limit = form.limit.data
+        return redirect(url_for('results', name=keyword, limit=limit))
+    return render_template('input.html', title='Input', form=form)
 
 
-@app.route('/results/<name>')
+@app.route('/results/<name>/<limit>')
 @login_required
-def results(name):
-    return render_template('results.html', user=user, title='Results'), "<xmp>" + str(request_results(name)) + " </xmp> "
+def results(name, limit):
+
+    con = sqlite3.connect(database)
+    cursor = con.cursor()
+    con.row_factory = sqlite3.Row
+
+    user_id = current_user.id
+    get_tweets_classification(user_id, name, limit)
+
+    search_query = """SELECT search_id from search ORDER BY `search_id` DESC LIMIT 1"""
+
+    cursor.execute(search_query)
+    search_id = cursor.fetchall()
+
+    resultstable = """SELECT user_results_id, search.keyword, username, created_at, tweet, place, classification
+    FROM user_results
+    INNER JOIN search ON user_results.search_id = search.search_id WHERE search.search_id = ?"""
+    
+    cursor.execute(resultstable, (int(search_id[0][0]),))
+   
+    rows = cursor.fetchall() 
+    return render_template('results.html', title='Results', name=name, limit=limit, rows = rows)
+
+@app.route('/user_scores')
+@login_required
+def scores():
+
+    con = sqlite3.connect(database)
+    cursor = con.cursor()
+    con.row_factory = sqlite3.Row
+
+    search_query = """SELECT search_id 
+    FROM search 
+    ORDER BY `search_id` 
+    DESC LIMIT 1"""
+
+    cursor.execute(search_query)
+    search_id = cursor.fetchall()
+
+    user_id = current_user.id
+    get_user_classification(user_id, int(search_id[0][0]))
+
+    tb_scores = """SELECT username, tb_score
+    FROM twitter_details
+    WHERE search_id = ?"""
+    
+    cursor.execute(tb_scores, (int(search_id[0][0]),))
+   
+    rows = cursor.fetchall() 
+
+    return render_template('user_scores.html', title='Scores', rows=rows)
+
+@app.route('/history')
+@login_required
+def history():
+
+    con = sqlite3.connect(database)
+    cursor = con.cursor()
+    con.row_factory = sqlite3.Row
+
+    userid = current_user.id
+
+    resultstable = """SELECT user_results_id, search.keyword, username, created_at, tweet, place, classification
+    FROM user_results
+    INNER JOIN search ON user_results.search_id = search.search_id 
+    WHERE user_results.user_id = ?"""
+    
+    cursor.execute(resultstable, (userid,))
+   
+    rows = cursor.fetchall()
+
+    user_searches = """SELECT search_id, keyword 
+    FROM search 
+    WHERE search.user_id = ?"""
+
+    cursor.execute(user_searches, (userid,))
+
+    searches = cursor.fetchall()
+
+    page = request.args.get('page', 1, type=int)
+    tweets = Search.query.order_by(Search.keyword.desc()).paginate(page, app.config['POSTS_PER_PAGE'], False)
+    next_url = url_for('history', page=tweets.next_num) \
+        if tweets.has_next else None
+    prev_url = url_for('history', page=tweets.prev_num) \
+        if tweets.has_prev else None
+
+    return render_template('history.html', title='History', rows=rows, searches=searches, posts=tweets.items,
+                           next_url=next_url, prev_url=prev_url)
+
+@app.route('/user_history')
+@login_required
+def user_history():
+
+    con = sqlite3.connect(database)
+    cursor = con.cursor()
+    con.row_factory = sqlite3.Row
+
+    userid = current_user.id
+
+    user_hist = """SELECT name, username, desc, status_count, friend_count, follower_count, acc_age, tweet_avg, tb_score
+    FROM twitter_details
+    WHERE twitter_details.user_id = ?"""
+    
+    cursor.execute(user_hist, (userid,))
+   
+    rows = cursor.fetchall()
+
+    user_searches = """SELECT search_id, keyword 
+    FROM search 
+    WHERE search.user_id = ?"""
+
+    cursor.execute(user_searches, (userid,))
+
+    searches = cursor.fetchall()
+
+    page = request.args.get('page', 1, type=int)
+    posts = Post.query.order_by(Post.timestamp.desc()).paginate(
+        page, app.config['POSTS_PER_PAGE'], False)
+    next_url = url_for('user_history', page=posts.next_num) \
+        if posts.has_next else None
+    prev_url = url_for('user_history', page=posts.prev_num) \
+        if posts.has_prev else None
+
+    return render_template('user_history.html', title='Past Users', rows=rows, searches=searches, posts=posts.items,
+                           next_url=next_url, prev_url=prev_url)
