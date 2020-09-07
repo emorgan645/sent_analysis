@@ -1,30 +1,50 @@
-.btn-twitter {
-    background: #00ACEE;
-    border-radius: 0;
-    color: #fff;
-    border-width: 1px;
-    border-style: solid;
-    border-color: #0075a2;
-}
-
-.btn-twitter:link,
-.btn-twitter:visited {
-    color: #fff;
-}
-
-.btn-twitter:active,
-.btn-twitter:hover {
-    background: #0075a2;
-    color: #fff;
-}
-
-.dropdown-item a {
-    color: #0060B6;
-    text-decoration: none;
-}
-
-.dropdown-item a:hover {
-    color: #00A0C6;
-    text-decoration: none;
-    cursor: pointer;
-}
+    body {
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        background-size: cover;
+    }
+    
+    a {
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    a:hover {
+        color: #00A0C6;
+        text-decoration: none;
+    }
+    
+    .btn-twitter {
+        background: #00ACEE;
+        border-radius: 0;
+        color: #fff;
+        border-width: 1px;
+        border-style: solid;
+        border-color: #0075a2;
+    }
+    
+    .dropdown-toggle-split {
+        padding-top: 26px;
+    }
+    
+    .btn-twitter:link,
+    .btn-twitter:visited {
+        color: #fff;
+    }
+    
+    .btn-twitter:active,
+    .btn-twitter:hover {
+        background: #0075a2;
+        color: #fff;
+    }
+    
+    .dropdown-item a {
+        color: #0060B6;
+        text-decoration: none;
+    }
+    
+    .dropdown-item a:hover {
+        color: #00A0C6;
+        text-decoration: none;
+        cursor: pointer;
+    }
