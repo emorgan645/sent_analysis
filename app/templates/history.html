@@ -1,4 +1,6 @@
-{% extends "base.html" %} {% import 'bootstrap/wtf.html' as wtf %} {% block app_content %}
+{% extends "base.html" %} {% import 'bootstrap/wtf.html' as wtf %} {% block app_content %} {% if search == None%}
+<h1>Nothing here to display :(</h1>
+{% else %}
 <h1>Your search history</h1>
 {% for search in searches %}
 <h2>{{ search[1] }}</h2>
@@ -23,10 +25,13 @@
             <td>{{row[4]}}</td>
             <td>{{row[6]}}</td>
         </tr>
-        {% endif %} {% endfor %}
+        {% endif %}
+        {% endfor %}
+        <button onclick="exportTableToCSV('results{{ search[1] }}.csv')">Export Table To CSV File</button>
     </tbody>
 </table>
-{% endfor %}
+
+{% endfor %} {% endif %}
 <nav aria-label="... ">
     <ul class="pager ">
         <li class="previous{% if not prev_url %} disabled{% endif %} ">

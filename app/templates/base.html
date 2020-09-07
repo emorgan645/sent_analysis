@@ -2,9 +2,11 @@
 
 <head>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}" />
+    <script src="{{url_for('static', filename='js/downloadcsv.js')}}"></script>
+    <link rel="shortcut icon" type="image" href="{{url_for('static', filename='img/fav.svg')}}">
 </head>
 
-<nav class="navbar navbar-default">
+<nav class="navbar navbar-light" style="background-color: #e3f2fd;">
     <div class="container">
         <div class="navbar-header">
             <button aria-expanded="false" class="navbar-toggle collapsed" data-target="#bs-example-navbar-collapse-1" data-toggle="collapse" type="button">
@@ -26,13 +28,14 @@
                 <li><a href="{{ url_for('login') }}">Login</a></li>
                 {% else %}
                 <div class="btn-group">
-                    <a href="{{ url_for('user', username=current_user.username) }}"></a><button class="btn btn-secondary btn-sm" type="button">Profile</button></a>
-                    <button type="button" class="btn btn-lg btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <button class="btn btn-info" type="button"><a href="{{ url_for('user', username=current_user.username) }}" >Profile</a></button>
+                    <button type="button" class="btn btn-info dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <span class="sr-only">Toggle Dropdown</span></button>
                     <div class="dropdown-menu">
-                        <li class="dropdown-item" type="button"><a href="{{ url_for('history') }}">Search Classification</a></li>
-                        <li class="dropdown-item" type="button"><a href="{{ url_for('user_history') }}" class="dropdown-item">Twitter Users</a></li>
-                        <li class="dropdown-item" type="button"><a href="{{ url_for('logout') }}">Logout</a></li>
+                        <a class="dropdown-item" type="button" href="{{ url_for('history') }}">Search Classification</a>
+                        <a class="dropdown-item" type="button" href="{{ url_for('user_history') }}" class="dropdown-item">Twitter Users</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" type="button" href="{{ url_for('logout') }}">Logout</a>
                     </div>
                     {% endif %}
             </ul>

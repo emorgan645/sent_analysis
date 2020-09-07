@@ -1,8 +1,11 @@
 {% extends "base.html" %} {% import 'bootstrap/wtf.html' as wtf %} {% block app_content %}
 <!DOCTYPE html>
 <html>
-
-<h1>Processing tweets</h1>
+{% if row == None%}
+<h1>Nothing here to display :(</h1>
+{% else %}
+<h1>User Scores</h1>
+<a href="user_scores.csv" download="user_scores.csv">Download the csv</a>
 <div class="container">
     <table class="table table-hover">
         <thead>
@@ -16,21 +19,52 @@
             {% for row in rows %}
             <tr>
                 <th scope="row">{{loop.index}}</th>
-                <td><a href="http://twitter.com/{{row[0]}}">@{{ row[0] }}</a></td>
-                {% if row[1] == None %}
+                <td><a href="http://twitter.com/{{row[1]}}">@{{ row[1] }}</a></td>
+                {% if row[2] == None %}
                 <td>Users tweets are protected</td>
                 {% else %}
-                <td>{{row[1]}}%</td>
-                {% endif %}
-                <td><a href="https://twitter.com/share?url=@{{row[0]}}" class="btn-floating btn-tw" type="button" role="button"><i class="fab fa-twitter"></i>Tweet</a></td>
+                <td>{{row[2]}}%</td>
+                {% endif %}{% if row[9] is defined and row[9]
+                < 50 %} <td>
+                    <a href="https://twitter.com/messages/compose?recipient_id={{ row[0] }}&text=Hi @{{ row[2] }}, based on your recent tweets it is advised that you seek professional help" class="twitter-dm-button" data-screen-name="@{{ row[1] }}" type="button" role="button"
+                        target="_blank" data-size="large" data-show-count="false">Tweet</a>
+                    </td>
+                    {% elif row[9] is defined and row[9] >= 60 %}
+                    <td>
+                        <a href="https://twitter.com/messages/compose?recipient_id={{ row[0] }}&text=Hi @{{ row[2] }}, here is number for sams" class="twitter-dm-button" data-screen-name="@{{ row[1] }}" type="button" role="button" target="_blank" data-size="large" data-show-count="false">Tweet</a>
+                    </td>
+                    {% elif row[9] is defined and row[9] >= 40 and row < 60 %}
+                    <td>
+                        <a href="https://twitter.com/messages/compose?recipient_id={{ row[0] }}&text=Hi @{{ row[2] }}, here is number for sams" class="twitter-dm-button" data-screen-name="@{{ row[1] }}" type="button" role="button" target="_blank" data-size="large" data-show-count="false">Tweet</a>
+                    </td>
+                    {% elif row[9] is defined and row[9] >= 20 and row[9] < 40 %}
+                    <td>
+                        <a href="https://twitter.com/messages/compose?recipient_id={{ row[0] }}&text=Hi @{{ row[2] }}, here is number for sams" class="twitter-dm-button" data-screen-name="@{{ row[1] }}" type="button" role="button" target="_blank" data-size="large" data-show-count="false">Tweet</a>
+                    </td>
+                    {% elif row[9] is defined and row[9] >= 0 and row[9] < 20 %}
+                    <td>
+                        <a href="https://twitter.com/messages/compose?recipient_id={{ row[0] }}&text=Hi @{{ row[2] }},
+                        
+                        You can contact a GP or NHS on 111
+                        
+                        You can also contact Samaritans on 116 123 for confidential 24-hour support." class="twitter-dm-button" data-screen-name="@{{ row[1] }}" type="button" role="button" target="_blank" data-size="large" data-show-count="false">Tweet</a>
+                    </td>
+                    {% else %}
+                    <td>
 
+                    </td>
+                    {% endif %}
+                    <script async src="https://platform.twitter.com/widgets.js " charset="utf-8 ">
+                    </script>
             </tr>
             {% endfor %}
 
         </tbody>
     </table>
-    <a href="{{ url_for('input') }}">Go to search</a>
+    <button onclick="exportTableToCSV('users.csv')">Export Table To CSV File</button>
+    <a href="{{ url_for( 'input') }} ">Go to search</a>
 </div>
+{% endif %}
 
 </html>
 

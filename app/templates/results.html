@@ -1,7 +1,10 @@
 {% extends "base.html" %} {% import 'bootstrap/wtf.html' as wtf %} {% block app_content %}
 <!DOCTYPE html>
 <html>
-
+{% if row == None%}
+<h1>No results for that search :(</h1>
+{% else %}
+<a href="#" download="{{ csvfile }}">Download the csv</a>
 <h1>Results</h1>
 <div class="container">
     <table class="table table-hover">
@@ -25,13 +28,14 @@
                 <td>{{row[4]}}</td>
                 <td>{{row[6]}}</td>
             </tr>
+            <button onclick="exportTableToCSV('results{{row[1]}}.csv')">Export Table To CSV File</button>
             {% endfor %}
-
-
         </tbody>
     </table>
+    
     <a href="{{ url_for('scores') }}">Go to user scores</a>
 </div>
+{% endif %}
 
 </html>
 
