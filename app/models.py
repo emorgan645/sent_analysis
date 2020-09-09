@@ -19,9 +19,10 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(128))
-    posts = db.relationship('Post', backref='author', lazy='dynamic')
+    searches = db.relationship('Search', backref='author', lazy='dynamic')
     about_me = db.Column(db.String(140))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+
     followed = db.relationship(
         'User', secondary=followers,
         primaryjoin=(followers.c.follower_id == id),
@@ -49,9 +50,13 @@ class User(UserMixin, db.Model):
         return self.followed.filter(
             followers.c.followed_id == user.id).count() > 0
 
-    def followed_posts(self):
-        return Post.query.join(followers, (followers.c.followed_id == Post.user_id)).filter(
-            followers.c.follower_id == self.id).order_by(Post.timestamp.desc())
+    # returns the user's own searches, and then use the "union" operator to combine the two queries into a single one.
+    def followed_searches(self):
+        followed = Search.query.join(
+            followers, (followers.c.followed_id == Search.user_id)).filter(
+                followers.c.follower_id == self.id)
+        own = Search.query.filter_by(user_id=self.id)
+        return followed.union(own).order_by(Search.timestamp.desc())
 
     # uses hashlib to create user avatars through URLs
     def avatar(self, size):
@@ -65,21 +70,12 @@ def load_user(id):
     return User.query.get(int(id))
 
 
-class Post(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    body = db.Column(db.String(140))
-    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-
-    def __repr__(self):
-        return '<Post {}>'.format(self.body)
-
-
 class Search(db.Model):
     search_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     keyword = db.Column(db.String(100))
     limit = db.Column(db.Integer)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
 
 
 class User_results(db.Model):

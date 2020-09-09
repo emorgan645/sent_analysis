@@ -40,6 +40,7 @@ access_token_secret = 'DKedCMrsuuLwhKHcBpdidqWl0Jemsdbkvpk9TodeQ656m'
 # access twitter api
 auth = tweepy.OAuthHandler(api_key, api_secret_key)
 auth.set_access_token(access_token, access_token_secret)
+# we can avoid hitting the rate limit by invoking wait_on_rate_limit=True
 api = tweepy.API(auth, wait_on_rate_limit=True)
 
 database = r"C:\Users\emorg\webapp\app.db"
@@ -65,8 +66,10 @@ def get_tweets_classification(user_id, text_query, limit):
         count = limit
 
         # Pulling individual tweets from query based on user input
-        results = api.search(q=text_query, exclude_replies=True, count=count, tweet_mode='extended', lang=['en'],
-                             include_rts=False)
+        results = api.search(q=[text_query], count=count, tweet_mode='extended',
+                                           include_rts=False, result_type="recent",
+                                           include_entities=True,
+                                           lang="en")
         for tweet in results:
 
             tweet_msg = tweet.full_text
@@ -103,7 +106,7 @@ def get_tweets_classification(user_id, text_query, limit):
                     tweet_msg = "".join(tweet_msg)
 
                     # insert data just collected into SQLite database
-                    connect(user_id, tweet.id, username, (str(tweet.created_at)), str(tweet_msg), tweet.place,
+                    connect(user_id, tweet.id, username, (str(tweet.created_at)), str(tweet_msg), location,
                             classification)
         return pd.DataFrame.from_dict(tweets_list)
 
@@ -166,6 +169,7 @@ def get_user_classification(user_id, text_query):
 
             
             item = api.get_user(user)
+            t_user_id = item.id
             name = item.name
             description = item.description
             status_count = str(item.statuses_count)
@@ -186,7 +190,7 @@ def get_user_classification(user_id, text_query):
                     if status.created_at < end_date:
                         break
 
-            connect_sql_update(text_query, user_id, user, avg, name, description, status_count, friend_count, followers_count, avg_tweets, acc_age)
+            connect_sql_update(text_query, t_user_id, user_id, user, avg, name, description, status_count, friend_count, followers_count, avg_tweets, acc_age)
 
         else:
             print("no info")
@@ -257,11 +261,16 @@ def connect_sql_users():
 
     try:
 
-        search_query = """SELECT search_id from search ORDER BY `search_id` DESC LIMIT 1"""
+        search_query = """SELECT search_id 
+        from search 
+        ORDER BY `search_id` 
+        DESC LIMIT 1"""
         cursor.execute(search_query)
         search_id = cursor.fetchall()
 
-        query = "SELECT username FROM user_results WHERE search_id = ?"
+        query = """SELECT username, classification 
+        FROM user_results 
+        WHERE search_id = ? AND classification = 'negative'"""
         cursor.execute(query, (int(search_id[0][0]),))
         usersall = cursor.fetchall()
         for row in usersall:
@@ -301,15 +310,16 @@ def connect(user_id, tweetid, username, created_at, tweet, place, classification
     return
 
 
-def connect_sql_update(search_id, user_id, user, tb_avg, name, description, status_count, friend_count, followers_count, tweets, acc_age):
+def connect_sql_update(search_id, t_user_id, user_id, user, tb_avg, name, description, status_count, friend_count, followers_count, tweets, acc_age):
     con = sqlite3.connect(database)
     cursor = con.cursor()
 
     try:
 
 
-        twit_query = """INSERT INTO twitter_details (search_id, name, desc, status_count, friend_count, follower_count, tweet_avg, acc_age, username, user_id, tb_score) VALUES (?,?,?,?,?,?,?,?,?,?,?)""" 
-        cursor.execute(twit_query, (search_id, name, description, status_count, friend_count, followers_count, tweets, acc_age, user, user_id, tb_avg))
+        twit_query = """INSERT INTO twitter_details (search_id, twitter_user_id, name, desc, status_count, friend_count, follower_count, tweet_avg, acc_age, username, user_id, tb_score) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""" 
+        cursor.execute(twit_query, (search_id, t_user_id, name, description, status_count,
+                                    friend_count, followers_count, tweets, acc_age, user, user_id, tb_avg))
 
         con.commit()
     except sqlite3.Error as e:

@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, IntegerField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length, NumberRange
 
-from app.models import User, Post, Search
+from app.models import User, Search
 
 
 class LoginForm(FlaskForm):
@@ -47,14 +47,9 @@ class EditProfileForm(FlaskForm):
                 raise ValidationError('Please use a different username.')
 
 
-class PostForm(FlaskForm):
-    post = TextAreaField('Say something', validators=[DataRequired(), Length(min=1, max=140)])
-    submit = SubmitField('Submit')
-
-
 class InputForm(FlaskForm):
     keyword = StringField('keyword', validators=[DataRequired()])
-    limit = IntegerField('limit', validators=[NumberRange(min=10, max=500, message='Invalid length! Must be between 1 and 500')])
+    limit = IntegerField('limit', validators=[NumberRange(min=10, max=100, message='Invalid length! Must be between 1 and 100')])
     submit = SubmitField('See Results! >>')
 
     def validate_input(self, keywords):
