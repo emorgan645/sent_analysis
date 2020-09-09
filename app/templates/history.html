@@ -1,48 +1,54 @@
-{% extends "base.html" %} {% import 'bootstrap/wtf.html' as wtf %} {% block app_content %} {% if search == None%}
-<h1>Nothing here to display :(</h1>
-{% else %}
-<h1>Your search history</h1>
-{% for search in searches %}
-<h2>{{ search[1] }}</h2>
-<table class="table table-hover">
-    <thead>
-        <tr>
-            <th scope="col "> </th>
-            <th scope="col ">Keyword</th>
-            <th scope="col ">Username</th>
-            <th scope="col ">Created at</th>
-            <th scope="col ">Tweet</th>
-            <th scope="col ">Classification</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for row in rows %} {% if row[1] == search[1]%}
-        <tr>
-            <td class="expand-button "></td>
-            <td>{{ row[1] }}</td>
-            <td><a href="http://twitter.com/{{row[2]}} ">@{{ row[2] }}</a></td>
-            <td>{{row[3]}}</td>
-            <td>{{row[4]}}</td>
-            <td>{{row[6]}}</td>
-        </tr>
-        {% endif %}
-        {% endfor %}
-        <button onclick="exportTableToCSV('results{{ search[1] }}.csv')">Export Table To CSV File</button>
-    </tbody>
-</table>
+{% extends "base.html" %} {% import 'bootstrap/wtf.html' as wtf %} {% block app_content %}
+<body>
+    <div class="container">
+        {% if searches|length == 0 %}
+        <h1>Nothing here to display :(</h1>
+        <a href="{{ url_for('index') }}">Go back</a>
+        {% else %}
+        <h1>Your search history</h1>
+        {% for search in searches %}
+        <h2>{{ search[1] }}</h2>
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th scope="col "> </th>
+                    <th scope="col ">Keyword</th>
+                    <th scope="col ">Username</th>
+                    <th scope="col ">Created at</th>
+                    <th scope="col ">Tweet</th>
+                    <th scope="col ">Classification</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %} {% if row[1] == search[1]%}
+                <tr>
+                    <td class="expand-button "></td>
+                    <td>{{ row[1] }}</td>
+                    <td><a href="http://twitter.com/{{row[2]}} ">@{{ row[2] }}</a></td>
+                    <td>{{row[3]}}</td>
+                    <td>{{row[4]}}</td>
+                    <td>{{row[6]}}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+                <button onclick="exportTableToCSV('results{{ search[1] }}.csv')">Export Table To CSV File</button>
+            </tbody>
+        </table>
 
-{% endfor %} {% endif %}
-<nav aria-label="... ">
-    <ul class="pager ">
-        <li class="previous{% if not prev_url %} disabled{% endif %} ">
-            <a href="{{ prev_url or '#' }} ">
-                <span aria-hidden="true ">&larr;</span> Newer Tweets
-            </a>
-        </li>
-        <li class="next{% if not next_url %} disabled{% endif %} ">
-            <a href="{{ next_url or '#' }} ">
-                Older Tweets <span aria-hidden="true ">&rarr;</span>
-            </a>
-        </li>
-    </ul>
-</nav> {% endblock %}
+        {% endfor %} {% endif %}
+        <nav aria-label="... ">
+            <ul class="pager ">
+                <li class="previous{% if not prev_url %} disabled{% endif %} ">
+                    <a href="{{ prev_url or '#' }} ">
+                        <span aria-hidden="true ">&larr;</span> Newer Tweets
+                    </a>
+                </li>
+                <li class="next{% if not next_url %} disabled{% endif %} ">
+                    <a href="{{ next_url or '#' }} ">
+                        Older Tweets <span aria-hidden="true ">&rarr;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+</body> {% endblock %}

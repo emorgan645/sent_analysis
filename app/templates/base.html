@@ -1,53 +1,55 @@
 {% extends 'bootstrap/base.html' %} {% block title %} {% if title %}{{ title }} - Sentiment{% else %}Welcome to Sentiment{% endif %} {% endblock %} {% block navbar %}
 
 <head>
+    <link rel="shortcut icon" type="image/svg" href="{{url_for('static', filename='/img/icon.svg')}}">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}" />
     <script src="{{url_for('static', filename='js/downloadcsv.js')}}"></script>
-    <link rel="shortcut icon" type="image" href="{{url_for('static', filename='img/fav.svg')}}">
+    
 </head>
-
-<nav class="navbar navbar-light" style="background-color: #e3f2fd;">
-    <div class="container">
-        <div class="navbar-header">
-            <button aria-expanded="false" class="navbar-toggle collapsed" data-target="#bs-example-navbar-collapse-1" data-toggle="collapse" type="button">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand" href="{{ url_for('index') }}">Sentiment</a>
-        </div>
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-            <ul class="nav navbar-nav">
-                <li><a href="{{ url_for('index') }}">Home</a></li>
-                <li><a href="{{ url_for('input') }}">Search</a></li>
-                <li><a href="{{ url_for('explore') }}">Explore</a></li>
-            </ul>
-            <ul class="nav navbar-nav navbar-right">
-                {% if current_user.is_anonymous %}
-                <li><a href="{{ url_for('login') }}">Login</a></li>
-                {% else %}
-                <div class="btn-group">
-                    <button class="btn btn-info" type="button"><a href="{{ url_for('user', username=current_user.username) }}" >Profile</a></button>
-                    <button type="button" class="btn btn-info dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <span class="sr-only">Toggle Dropdown</span></button>
-                    <div class="dropdown-menu">
-                        <a class="dropdown-item" type="button" href="{{ url_for('history') }}">Search Classification</a>
-                        <a class="dropdown-item" type="button" href="{{ url_for('user_history') }}" class="dropdown-item">Twitter Users</a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" type="button" href="{{ url_for('logout') }}">Logout</a>
-                    </div>
-                    {% endif %}
-            </ul>
+    <body>
+    <nav class="navbar navbar-light" style="background-color: #e3f2fd;">
+        <div class="container">
+            <div class="navbar-header">
+                <button aria-expanded="false" class="navbar-toggle collapsed" data-target="#bs-example-navbar-collapse-1" data-toggle="collapse" type="button">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="{{ url_for('index') }}">Sentiment</a>
             </div>
-        </div>
-</nav>
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li><a href="{{ url_for('index') }}">Home</a></li>
+                    <li><a href="{{ url_for('index') }}">Info</a></li>
+                    <li><a href="{{ url_for('explore') }}">Explore</a></li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    {% if current_user.is_anonymous %}
+                    <li><a href="{{ url_for('login') }}">Login</a></li>
+                    {% else %}
+                    <div class="btn-group">
+                        <button class="btn btn-info" type="button"><a href="{{ url_for('user', username=current_user.username) }}" >Profile</a></button>
+                        <button type="button" class="btn btn-info dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <span class="sr-only">Toggle Dropdown</span></button>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item" type="button" href="{{ url_for('history') }}">Search Classification</a>
+                            <a class="dropdown-item" type="button" href="{{ url_for('user_history') }}" class="dropdown-item">Twitter Users</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" type="button" href="{{ url_for('logout') }}">Logout</a>
+                        </div>
+                        {% endif %}
+                </ul>
+                </div>
+            </div>
+    </nav>
 
-{% endblock %} {% block content %}
-<div class="container">
-    {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
+    {% endblock %} {% block content %}
+    <div class="container">
+        {% with messages = get_flashed_messages() %} {% if messages %} {% for message in messages %}
 
-    <div class="alert alert-info" role="alert">{{ message }}</div>
+        <div class="alert alert-info" role="alert">{{ message }}</div>
 
-</div>
+    </div>
+</body>
 {% endfor %} {% endif %} {% endwith %} {# application content needs to be provided in the app_content block #} {% block app_content %}{% endblock %} {% endblock %} {% block scripts %} {{ super() }} {{ moment.include_moment() }} {% endblock %}
