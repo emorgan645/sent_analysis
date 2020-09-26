@@ -12,6 +12,20 @@
     a:hover {
         color: #00A0C6;
         text-decoration: none;
+        background-color: inherit;
+    }
+
+    .login {
+        text-align: center;
+    }
+
+    .loginbtn {
+        padding-top: 7px;
+        padding-bottom: 7px;
+    }
+
+    .register{
+        margin-left: 40%;
     }
     
     .btn-twitter {
@@ -25,6 +39,14 @@
     
     .dropdown-toggle-split {
         padding-top: 26px;
+    }
+
+    .navbar-toggle .icon-bar {
+        background-color: rgb(21, 106, 109);
+    }
+
+    .navbar-right{
+        margin-top: 7px;
     }
     
     .btn-twitter:link,
