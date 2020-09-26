@@ -1,4 +1,5 @@
 import csv
+import urllib
 from datetime import datetime
 
 import joblib
@@ -16,9 +17,6 @@ from app.models import User, Search, User_results
 import sqlite3
 
 database = r"C:\Users\emorg\webapp\app.db"
-
-model_NB = joblib.load("twttr_sntmnt.pkl")
-
 
 def requestResults(name, limit):
     user_id = current_user.id
@@ -46,8 +44,8 @@ def index():
                              keyword=form.keyword.data, limit=form.limit.data)
         db.session.add(user_search)
         db.session.commit()
-        keyword = [form.keyword.data]
-        limit = form.limit.data  
+        keyword = form.keyword.data
+        limit = form.limit.data
         flash("Search complete!")
         return redirect(url_for('results', name=keyword, limit=limit))
     page = request.args.get('page', 1, type=int)
@@ -213,8 +211,7 @@ def results(name, limit):
     rows = cursor.fetchall()
 
     if rows is None:
-        flash("No results for ",name," \nGo back and try again.")
-
+        flash("No results for ", name)
     return render_template('results.html', title='Results', name=name, limit=limit, rows=rows)
 
 

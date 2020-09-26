@@ -54,7 +54,7 @@ class User(UserMixin, db.Model):
     def followed_searches(self):
         followed = Search.query.join(
             followers, (followers.c.followed_id == Search.user_id)).filter(
-                followers.c.follower_id == self.id)
+            followers.c.follower_id == self.id)
         own = Search.query.filter_by(user_id=self.id)
         return followed.union(own).order_by(Search.timestamp.desc())
 

@@ -1,4 +1,4 @@
-from flask_wtf import FlaskForm
+from flask_wtf import FlaskForm, RecaptchaField
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, IntegerField
 from wtforms.validators import ValidationError, DataRequired, Email, EqualTo, Length, NumberRange
 
@@ -13,11 +13,12 @@ class LoginForm(FlaskForm):
 
 
 class RegistrationForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
+    username = StringField('Username', validators=[DataRequired()], render_kw={"placeholder": "user"})
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     password2 = PasswordField(
         'Repeat Password', validators=[DataRequired(), EqualTo('password')])
+    recaptcha = RecaptchaField()
     submit = SubmitField('Register')
 
     def validate_username(self, username):
@@ -33,7 +34,8 @@ class RegistrationForm(FlaskForm):
 
 class EditProfileForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
-    about_me = TextAreaField('About me', validators=[Length(min=0, max=140)])
+    about_me = TextAreaField('About me', validators=[Length(
+        min=0, max=140)], render_kw={"placeholder": "Add your key information here"})
     submit = SubmitField('Submit')
 
     def __init__(self, original_username, *args, **kwargs):
@@ -48,9 +50,9 @@ class EditProfileForm(FlaskForm):
 
 
 class InputForm(FlaskForm):
-    keyword = StringField('keyword', validators=[DataRequired()])
-    limit = IntegerField('limit', validators=[NumberRange(min=10, max=100, message='Invalid length! Must be between 1 and 100')])
-    submit = SubmitField('See Results! >>')
+    keyword = StringField('Keyword', validators=[DataRequired()])
+    limit = IntegerField('Limit', validators=[NumberRange(min=1, max=100, message='Invalid length! Must be between 1 and 100')])
+    submit = SubmitField('See Results!')
 
     def validate_input(self, keywords):
         if keywords is None:

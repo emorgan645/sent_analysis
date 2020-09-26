@@ -19,6 +19,7 @@ from flask import flash
 
 from nltk.stem.wordnet import WordNetLemmatizer
 from nltk.tag import pos_tag
+from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
 from textblob import TextBlob
@@ -45,7 +46,6 @@ api = tweepy.API(auth, wait_on_rate_limit=True)
 
 database = r"C:\Users\emorg\webapp\app.db"
 
-
 # formatting helper
 def sentiment_str(x):
     if x == 'negative':
@@ -59,6 +59,8 @@ def sentiment_str(x):
 
 def get_tweets_classification(user_id, text_query, limit):
     try:
+
+        stop_words = stopwords.words('english')
 
         # list to store tweets
         tweets_list = []
@@ -98,7 +100,7 @@ def get_tweets_classification(user_id, text_query, limit):
 
                     tweet_msg = [tweet_msg]
 
-                    classification = model_NB.predict(tweet_msg)
+                    classification = model_NB.predict(remove_noise(tweet_msg, stop_words))
                     classification = sentiment_str(classification[0])
 
                     tweets_list.append({'classification': classification})
@@ -126,7 +128,7 @@ def get_user_classification(user_id, text_query):
         try:
             if users is not None:
 
-                search = api.user_timeline(screen_name=user, count=20, tweet_mode='extended', include_rts=False)
+                search = api.user_timeline(screen_name=user, count=20, tweet_mode='extended')
 
                 num = 0
                 tb_total = 0
@@ -233,6 +235,7 @@ def remove_noise(tweet_tokens, stop_words=()):
         # Remove characters beyond Basic Multilingual Plane (BMP) of Unicode:
         token = ''.join(c for c in token if c <= '\uFFFF')
 
+        # lemmatize each tweet
         if tag.startswith("NN"):
             pos = 'n'
         elif tag.startswith('VB'):
@@ -246,12 +249,6 @@ def remove_noise(tweet_tokens, stop_words=()):
         if len(token) > 0 and token not in string.punctuation and token.lower() not in stop_words:
             cleaned_tokens.append(token.lower())
     return cleaned_tokens
-
-
-# get a word count per sentence column
-def word_count(sentence):
-    return len(sentence.split())
-
 
 def connect_sql_users():
     con = sqlite3.connect(database)
