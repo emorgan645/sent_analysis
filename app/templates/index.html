@@ -2,8 +2,24 @@
 <body>
     <div class="container">
         <h1>Hi, {{ current_user.username }}!</h1>
-        {% if form %} {{ wtf.quick_form(form) }}
+        {% if form %} 
+          <form action="" method="post" class="form" role="form">
+            {{ form.hidden_tag() }}
+            	<div class="row">
+                    <div class="form-group col-md-6">
+                    {{ wtf.form_field(form.keyword, class='form-control', 
+                        placeholder='"Paris" OR "London"') }}
+                    </div>
+                    <div class="form-group col-md-6">
+                    {{ wtf.form_field(form.limit, class='form-control', 
+                        placeholder='1 - 100') }}
+                    </div>
+                </div>
+                {{ form.submit(class_='btn btn-info') }}
+            </form>
+        <h5 style="color: rgb(138, 132, 132);">*Hint!* You can use "OR" and "AND" to search for multiple keywords or phrases</h5>
         <br> {% endif %} {% for search in searches %} {% include '_post.html' %} {% endfor %}
+        
         <nav aria-label="...">
             <ul class="pager">
                 <li class="previous{% if not prev_url %} disabled{% endif %}">

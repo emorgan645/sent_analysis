@@ -4,7 +4,8 @@
     <body>
         <div class="container">
         {% if rows|length > 0 %}
-        <button onclick="exportTableToCSV('results_{{ name }}.csv')">Export Table To CSV File</button>
+        <button onclick="exportTableToCSV('results_{{name}}.csv')" class="btn btn-secondary">Export Table To CSV File</button>
+        <a href="{{ url_for('scores') }}" class="btn btn-info" style="float: right;">Go to user scores</a>
         <h1>Results</h1>
         <div class="container">
             <table class="table table-hover">
@@ -31,10 +32,9 @@
                     {% endfor %}
                 </tbody>
             </table>       
-            <a href="{{ url_for('scores') }}">Go to user scores</a>
             {% else %}
             <h1>No results for that search :(</h1>
-            <a href="{{ url_for('index') }}">Go back</a>
+            <a href="{{ url_for('index') }}" class="btn btn-info">Go back</a>
         </div>
         {% endif %}
     </div>

@@ -10,7 +10,7 @@
                 <a href="{{ url_for('user', username=search.author.username) }}">
                     {{ search.author.username }}
                 </a> searched {{ moment(search.timestamp).fromNow() }}:
-                <br> {{ search.keyword }} with a {{ search.limit }} tweet limit
+                <br> "{{ search.keyword }}" with a {{ search.limit }} tweet limit
             </td>
         </tr>
     </table>

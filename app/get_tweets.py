@@ -28,7 +28,12 @@ from app.forms import InputForm
 from app import db
 
 model_NB = joblib.load("twttr_sntmnt.pkl")
+database = r"C:\Users\emorg\webapp\app.db"
 
+"""
+Twitter API keys and tokens 
+to access the api
+"""
 # api key
 api_key = 'keNzWN4DQt2sHQ7LJmYZQJ9rV'
 # api secret key
@@ -43,19 +48,6 @@ auth = tweepy.OAuthHandler(api_key, api_secret_key)
 auth.set_access_token(access_token, access_token_secret)
 # we can avoid hitting the rate limit by invoking wait_on_rate_limit=True
 api = tweepy.API(auth, wait_on_rate_limit=True)
-
-database = r"C:\Users\emorg\webapp\app.db"
-
-# formatting helper
-def sentiment_str(x):
-    if x == 'negative':
-        classification = 'negative'
-    elif x == 'positive':
-        classification = 'positive'
-    else:
-        classification = 'neutral'
-    return classification
-
 
 def get_tweets_classification(user_id, text_query, limit):
     try:
@@ -90,8 +82,6 @@ def get_tweets_classification(user_id, text_query, limit):
             if account_age_days > 60:
 
                 if tweet_msg is not None:
-                    # custom_tokens = remove_noise(word_tokenize(tweet_msg))
-                    # print(custom_tokens)
 
                     # Adding to list that contains all tweets
                     tweets_list.append(
@@ -101,7 +91,7 @@ def get_tweets_classification(user_id, text_query, limit):
                     tweet_msg = [tweet_msg]
 
                     classification = model_NB.predict(remove_noise(tweet_msg, stop_words))
-                    classification = sentiment_str(classification[0])
+                    classification = classification[0]
 
                     tweets_list.append({'classification': classification})
 
@@ -120,7 +110,6 @@ def get_tweets_classification(user_id, text_query, limit):
 def get_user_classification(user_id, text_query):
 
     users = connect_sql_users()
-
     account_list = []
     tweet_count = 0
 
@@ -129,7 +118,6 @@ def get_user_classification(user_id, text_query):
             if users is not None:
 
                 search = api.user_timeline(screen_name=user, count=20, tweet_mode='extended')
-
                 num = 0
                 tb_total = 0
 
@@ -159,8 +147,7 @@ def get_user_classification(user_id, text_query):
                     avg = tb_total / total * 100
                     avg = round(avg, 2)
 
-                    account_list.append(user)
-                
+                account_list.append(user)              
             else:
                 sys.exit(0)
         except tweepy.TweepError as ex:
@@ -250,6 +237,7 @@ def remove_noise(tweet_tokens, stop_words=()):
             cleaned_tokens.append(token.lower())
     return cleaned_tokens
 
+# fetches twitter user data from db
 def connect_sql_users():
     con = sqlite3.connect(database)
     cursor = con.cursor()
@@ -279,7 +267,7 @@ def connect_sql_users():
     cursor.close()
     con.close()
 
-
+# adds tweet data from twitter api to db 
 def connect(user_id, tweetid, username, created_at, tweet, place, classification):
     con = sqlite3.connect(database)
     cursor = con.cursor()
@@ -306,7 +294,7 @@ def connect(user_id, tweetid, username, created_at, tweet, place, classification
     con.close()
     return
 
-
+# adds user data from twitter api to db
 def connect_sql_update(search_id, t_user_id, user_id, user, tb_avg, name, description, status_count, friend_count, followers_count, tweets, acc_age):
     con = sqlite3.connect(database)
     cursor = con.cursor()

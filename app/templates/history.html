@@ -8,7 +8,9 @@
         <h1>Your search history</h1>
         {% for search in searches %}
         <h2>{{ search[1] }}</h2>
-        <table class="table table-hover">
+        <table class="table tr table-hover">
+        <button onclick="exportTableToCSV('results_{{ search[1]}}.csv')" class="btn btn-secondary">Export Table To CSV
+            File</button>
             <thead>
                 <tr>
                     <th scope="col "> </th>
@@ -31,7 +33,6 @@
                 </tr>
                 {% endif %}
                 {% endfor %}
-                <button onclick="exportTableToCSV('results{{ search[1] }}.csv')">Export Table To CSV File</button>
             </tbody>
         </table>
 

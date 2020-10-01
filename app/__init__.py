@@ -20,10 +20,10 @@ app.config.from_object(Config)
 
 bootstrap = Bootstrap(app)
 db = SQLAlchemy(app)
-mail = Mail(app)
 migrate = Migrate(app, db)
 moment = Moment(app)
 
+# initialise Flask-login
 login = LoginManager(app)
 login.login_view = 'login'
 
@@ -32,7 +32,7 @@ if not app.debug:
 
     if not os.path.exists('logs'):
         os.mkdir('logs')
-    file_handler = RotatingFileHandler('logs/microblog.log', maxBytes=10240, backupCount=10)
+    file_handler = RotatingFileHandler('logs/sentiMental.log', maxBytes=10240, backupCount=10)
     # setFormatter provides custom formatting for the log messages
     file_handler.setFormatter(logging.Formatter(
         '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))

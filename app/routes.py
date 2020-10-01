@@ -16,8 +16,10 @@ from app.models import User, Search, User_results
 
 import sqlite3
 
+# location of database
 database = r"C:\Users\emorg\webapp\app.db"
 
+# will get classification and tweet details for results pages
 def requestResults(name, limit):
     user_id = current_user.id
     tweets = get_tweets_classification(user_id, name, limit)
@@ -26,15 +28,17 @@ def requestResults(name, limit):
 
     return data + str(tweets)
 
-
+# checks if the user has valid credentials and gives their last seen datetime
 @app.before_request
 def before_request():
     if current_user.is_authenticated:
         current_user.last_seen = datetime.utcnow()
         db.session.commit()
 
-
+# ensures user is redirected to homepage or login page
 @app.route('/', methods=['GET', 'POST'])
+
+# home page
 @app.route('/index', methods=['GET', 'POST'])
 @login_required
 def index():
@@ -197,11 +201,13 @@ def results(name, limit):
     user_id = current_user.id
     get_tweets_classification(user_id, name, limit)
 
+    #grabs current user id
     search_query = """SELECT search_id from search ORDER BY `search_id` DESC LIMIT 1"""
 
     cursor.execute(search_query)
     search_id = cursor.fetchall()
 
+    # displays users search results
     resultstable = """SELECT user_results_id, search.keyword, username, created_at, tweet, place, classification
     FROM user_results
     INNER JOIN search ON user_results.search_id = search.search_id WHERE search.search_id = ?"""

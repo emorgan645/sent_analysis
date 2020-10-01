@@ -14,6 +14,7 @@ followers = db.Table(
 )
 
 
+# creates new user and tracks follower/following count in db
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
@@ -65,19 +66,22 @@ class User(UserMixin, db.Model):
             digest, size)
 
 
+# logs user into application
 @login.user_loader
 def load_user(id):
     return User.query.get(int(id))
 
 
+# Creates searches for current user in db
 class Search(db.Model):
     search_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    keyword = db.Column(db.String(100))
+    keyword = db.Column(db.String(100)) 
     limit = db.Column(db.Integer)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
 
 
+# Creates twitter user results and stores them in db
 class User_results(db.Model):
     user_results_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
