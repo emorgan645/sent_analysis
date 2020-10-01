@@ -13,18 +13,21 @@ class UserTest(unittest.TestCase):
         db.session.remove()
         db.drop_all()
 
+    # Tests the hashing of user password
     def test_password_hashing(self):
-        u = User(username='susan')
+        u = User(username='Test')
         u.set_password('cat')
         self.assertFalse(u.check_password('dog'))
         self.assertTrue(u.check_password('cat'))
 
+    # Will test if the user identicon matches the MD5 hashing of their email address
     def test_avatar(self):
         u = User(username='john', email='john@example.com')
         self.assertEqual(u.avatar(128), ('https://www.gravatar.com/avatar/'
                                          'd4c74594d841139328695756648b6bd6'
                                          '?d=identicon&s=128'))
 
+    # Will test to see if follow/unfollow function works  
     def test_follow(self):
         u1 = User(username='Test1', email='test1@example.com')
         u2 = User(username='Test2', email='test2@example.com')
@@ -52,6 +55,7 @@ class UserTest(unittest.TestCase):
         self.assertEqual(u1.followed.count(), 0)
         self.assertEqual(u2.followers.count(), 0)
 
+    # tests if follower search terms appear correctly
     def test_follow_searches(self):
         # create four users
         u1 = User(username='Test1', email='test1@example.com')
@@ -60,7 +64,7 @@ class UserTest(unittest.TestCase):
         u4 = User(username='Test4', email='test4@example.com')
         db.session.add_all([u1, u2, u3, u4])
 
-        # create four posts
+        # create four search posts
         now = datetime.utcnow()
         p1 = Search(keyword="test1", author=u1,
                     timestamp=now + timedelta(seconds=1))
